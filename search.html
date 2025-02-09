@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <a href="#" class="back-button" onclick="goBack()">← Back</a>
+                <h1>Search Results</h1>
+            </div>
+            <div class="header-right">
+                <div class="search-container">
+                    <form class="search-form" onsubmit="handleSearch(event)">
+                        <div class="search-input-container">
+                            <input type="text" class="search-box" placeholder="Search this workspace..." id="searchInput" 
+                                   autocomplete="off"
+                                   oninput="handleLiveSearch(event)" 
+                                   onfocus="showSearchDropdown()" 
+                                   onblur="hideSearchDropdown()">
+                        </div>
+                        <div class="search-dropdown" id="searchDropdown">
+                            <div class="live-search-results" id="liveSearchResults"></div>
+                            <div class="recent-searches" id="recentSearches"></div>
+                            <button type="submit" class="search-dropdown-button" id="searchDropdownButton" style="display: none;">Search</button>
+                        </div>
+                        <div class="recent-searches" id="recentSearches"></div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+        <div class="search-info" id="searchInfo">
+            <div class="search-info-text"></div>
+            <div class="filter-container">
+                <select id="resultTypeFilter" class="filter-dropdown" onchange="filterResults()">
+                    <option value="all">All types</option>
+                    <option value="files">Files only</option>
+                    <option value="projects">Projects only</option>
+                </select>
+                
+            </div>
+        </div>
+        
+        <div id="searchAllContainer" style="display: none;">
+            <button type="button" class="search-all-button" onclick="searchAllProjects()">Search All Projects</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <script>
+        window.onload = performSearch;
+
+        async function performSearch() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const query = urlParams.get('q');
+                const projectFilter = urlParams.get('project');
+
+                if (!query) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                document.title = `Search: ${query}`;
+                updateSearchInfo(query, projectFilter);
+
+                const projectsData = [
+                {
+                    name: "Summer campaign best friend for Nestle",
+                    files: [
+                        { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                        { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                        { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                        { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                        { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                        { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                        { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                    ]
+                },
+                {
+                    name: "Summer this is a long summer campaign",
+                    files: [
+                        { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                        { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                        { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                        { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                    ]
+                },
+                {
+                    name: "Winter campaign cozy home for Starbucks",
+                    files: [
+                        { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                        { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                        { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                        { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                    ]
+                },
+                {
+                    name: "Spring campaign new beginnings for Apple",
+                    files: [
+                        { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                        { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                        { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                        { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                    ]
+                },
+                {
+                    name: "Fall campaign harvest moon for Whole Foods Market",
+                    files: [
+                        { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                        { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                        { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                        { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                    ]
+                }
+                ];
+                const results = searchProjectsData(projectsData, query, projectFilter);
+                displayResults(results);
+            } catch (error) {
+                console.error('Error performing search:', error);
+            }
+        }
+
+        function searchProjectsData(projectsData, query, projectFilter) {
+            query = query.toLowerCase();
+            const results = [];
+
+            projectsData.forEach(project => {
+                if (projectFilter && project.name !== projectFilter) return;
+                project.files.forEach(file => {
+                    if (project.name.toLowerCase().includes(query) ||
+                        file.name.toLowerCase().includes(query) ||
+                        file.type.toLowerCase().includes(query)) {
+                        results.push({ project: project.name, name: file.name, type: file.type });
+                    }
+                });
+            });
+
+            return results;
+
+        }
+
+        function getFileIcon(fileType) {
+            const icons = {
+                'Image': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+                'Video': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>`,
+                'Audio': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+                'PDF': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+                'Excel': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`
+            };
+            const defaultIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+            return icons[fileType.trim()] || defaultIcon;
+        }
+
+        function updateSearchInfo(query, projectFilter) {
+            const searchInfo = document.querySelector('.search-info-text');
+            const searchAllContainer = document.getElementById('searchAllContainer');
+            
+            if (projectFilter) {
+                searchInfo.textContent = `Showing results for "${query}" in project "${projectFilter}"`;
+                searchAllContainer.style.display = 'block';
+            } else {
+                searchInfo.textContent = `Showing results for "${query}" across all projects`;
+                searchAllContainer.style.display = 'none';
+            }
+        }
+
+        function searchAllProjects() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+            const query = new URLSearchParams(window.location.search).get('q').toLowerCase();
+            const projectFilter = new URLSearchParams(window.location.search).get('project');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        No results found
+                    </div>
+                `;
+                return;
+            }
+
+            // Separate results into projects and files
+            const projectResults = new Set();
+            const fileResults = [];
+
+            results.forEach(result => {
+                // Only add project to results if its name matches the query and there's no project filter
+                if (!projectFilter && result.project.toLowerCase().includes(query)) {
+                    projectResults.add(result.project);
+                }
+                // Add only files that directly match the search query
+                if (result.name.toLowerCase().includes(query) || 
+                    result.type.toLowerCase().includes(query)) {
+                    fileResults.push(result);
+                }
+            });
+
+            const projectsSection = !projectFilter && projectResults.size > 0 ? `
+                <div class="results-section">
+                    <div class="section-header">Projects (${projectResults.size})</div>
+                    <div class="section-content">
+                        ${Array.from(projectResults).map(project => `
+                            <a href="project.html?name=${encodeURIComponent(project)}" class="result-item">
+                                <div class="result-icon">📁</div>
+                                <div class="result-details">
+                                    <div class="result-name">${project}</div>
+                                    <div class="result-type">Project</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            const filesSection = fileResults.length > 0 ? `
+                <div class="results-section">
+                    <div class="section-header">Files (${fileResults.length})</div>
+                    <div class="section-content">
+                        ${fileResults.map(result => `
+                            <div class="result-item" onclick="window.location.href='preview.html?name=${encodeURIComponent(result.name)}&type=${encodeURIComponent(result.type)}&project=${encodeURIComponent(result.project)}'">
+                                <div class="result-icon">${getFileIcon(result.type)}</div>
+                                <div class="result-details">
+                                    <div class="result-name">${result.name}</div>
+                                    <div class="result-type">
+                                        <a href="project.html?name=${encodeURIComponent(result.project)}" class="project-link" onclick="event.stopPropagation()">${result.project}</a> | ${result.type}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            resultsContainer.innerHTML = projectsSection + filesSection;
+        }
+
+        function goBack() {
+            const projectFilter = new URLSearchParams(window.location.search).get('project');
+            if (projectFilter) {
+                window.location.href = `project.html?name=${encodeURIComponent(projectFilter)}`;
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Initialize recent searches from localStorage
+        let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+
+        function showRecentSearches() {
+            const recentSearchesDiv = document.getElementById('recentSearches');
+            if (recentSearches.length === 0) return;
+
+            recentSearchesDiv.innerHTML = recentSearches
+                .map(term => `
+                    <div class="recent-search-item" onclick="handleRecentSearch('${term}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        ${term}
+                    </div>
+                `)
+                .join('');
+            recentSearchesDiv.classList.add('show');
+        }
+
+        function hideRecentSearches() {
+            setTimeout(() => {
+                document.getElementById('recentSearches').classList.remove('show');
+            }, 200);
+        }
+
+        function handleRecentSearch(term) {
+            window.location.href = `search.html?q=${encodeURIComponent(term)}`;
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+            const searchQuery = document.getElementById('searchInput').value.trim();
+            if (searchQuery) {
+                // Add to recent searches
+                if (!recentSearches.includes(searchQuery)) {
+                    recentSearches.unshift(searchQuery);
+                    if (recentSearches.length > 5) {
+                        recentSearches.pop();
+                    }
+                    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                }
+                window.location.href = `search.html?q=${encodeURIComponent(searchQuery)}`;
+            }
+        }
+
+        function filterResults() {
+            const filter = document.getElementById('resultTypeFilter').value;
+            const sections = document.querySelectorAll('.results-section');
+            let hasVisibleResults = false;
+            const projectFilter = new URLSearchParams(window.location.search).get('project');
+            const query = new URLSearchParams(window.location.search).get('q');
+
+            // Re-run the search to get fresh results
+            try {
+                const projectsData = [
+                    {
+                        name: "Summer campaign best friend for Nestle",
+                        files: [
+                            { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                            { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                            { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                            { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                            { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                            { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                            { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                        ]
+                    },
+                    {
+                        name: "Summer this is a long summer campaign",
+                        files: [
+                            { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                            { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                            { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                            { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                        ]
+                    },
+                    {
+                        name: "Winter campaign cozy home for Starbucks",
+                        files: [
+                            { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                            { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                            { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                            { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                        ]
+                    },
+                    {
+                        name: "Spring campaign new beginnings for Apple",
+                        files: [
+                            { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                            { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                            { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                            { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                        ]
+                    },
+                    {
+                        name: "Fall campaign harvest moon for Whole Foods Market",
+                        files: [
+                            { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                            { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                            { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                            { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                        ]
+                    }
+                ];
+
+                const results = searchProjectsData(projectsData, query, projectFilter);
+                const projectResults = new Set();
+                const fileResults = [];
+
+                results.forEach(result => {
+                    if (!projectFilter && result.project.toLowerCase().includes(query.toLowerCase())) {
+                        projectResults.add(result.project);
+                    }
+                    if (result.name.toLowerCase().includes(query.toLowerCase()) || 
+                        result.type.toLowerCase().includes(query.toLowerCase())) {
+                        fileResults.push(result);
+                    }
+                });
+
+                // Show sections based on filter
+                sections.forEach(section => {
+                    const header = section.querySelector('.section-header');
+                    const isProjectSection = header && header.textContent.includes('Projects');
+                    const isFileSection = header && header.textContent.includes('Files');
+
+                    if (filter === 'all' || 
+                        (filter === 'projects' && isProjectSection) || 
+                        (filter === 'files' && isFileSection)) {
+                        section.style.display = 'block';
+                        if ((isProjectSection && projectResults.size > 0) || 
+                            (isFileSection && fileResults.length > 0)) {
+                            hasVisibleResults = true;
+                        }
+                    } else {
+                        section.style.display = 'none';
+                    }
+
+                    // Handle project filter context
+                    if (projectFilter && isProjectSection) {
+                        section.style.display = 'none';
+                    }
+                });
+
+                if (!hasVisibleResults) {
+                    const resultsContainer = document.getElementById('searchResults');
+                    resultsContainer.innerHTML = `
+                        <div class="no-results">
+                            No results found for the selected filter
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error filtering results:', error);
+            }
+        }
+
+        async function handleLiveSearch(event) {
+            const query = event.target.value.trim();
+            const liveSearchResults = document.getElementById('liveSearchResults');
+            const searchDropdownButton = document.getElementById('searchDropdownButton');
+            const recentSearchesDiv = document.getElementById('recentSearches');
+
+            if (!query) {
+                liveSearchResults.style.display = 'none';
+                searchDropdownButton.style.display = 'none';
+                showRecentSearches();
+                return;
+            }
+
+            recentSearchesDiv.style.display = 'none';
+            searchDropdownButton.style.display = 'block';
+
+            try {
+                const projectsData = [
+                {
+                    name: "Summer campaign best friend for Nestle",
+                    files: [
+                        { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                        { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                        { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                        { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                        { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                        { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                        { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                    ]
+                },
+                {
+                    name: "Summer this is a long summer campaign",
+                    files: [
+                        { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                        { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                        { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                        { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                    ]
+                },
+                {
+                    name: "Winter campaign cozy home for Starbucks",
+                    files: [
+                        { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                        { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                        { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                        { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                    ]
+                },
+                {
+                    name: "Spring campaign new beginnings for Apple",
+                    files: [
+                        { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                        { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                        { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                        { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                    ]
+                },
+                {
+                    name: "Fall campaign harvest moon for Whole Foods Market",
+                    files: [
+                        { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                        { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                        { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                        { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                    ]
+                }
+                ];
+                const results = searchProjectsData(projectsData, query);
+                displayLiveResults(results, query);
+            } catch (error) {
+                console.error('Error performing live search:', error);
+            }
+        }
+
+        function displayLiveResults(results, query) {
+            const liveSearchResults = document.getElementById('liveSearchResults');
+            const hasResults = results.length > 0;
+            liveSearchResults.style.display = 'block';
+
+            if (!hasResults) {
+                liveSearchResults.innerHTML = `
+                    <div class="no-results">
+                        No matches found for "${query}"
+                    </div>`;
+                return;
+            }
+
+            const projectResults = new Set();
+            const fileResults = [];
+
+            results.forEach(result => {
+                if (result.project.toLowerCase().includes(query.toLowerCase())) {
+                    projectResults.add(result.project);
+                }
+                if (result.name.toLowerCase().includes(query.toLowerCase()) || 
+                    result.type.toLowerCase().includes(query.toLowerCase())) {
+                    fileResults.push(result);
+                }
+            });
+
+            let html = '';
+
+            if (projectResults.size > 0) {
+                html += `
+                    <div class="results-section">
+                        <div class="section-header">Projects</div>
+                        ${Array.from(projectResults).slice(0, 3).map(project => `
+                            <a href="project.html?name=${encodeURIComponent(project)}" class="result-item">
+                                <div class="result-icon">📁</div>
+                                <div class="result-details">
+                                    <div class="result-name">${project}</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>`;
+            }
+
+            if (fileResults.length > 0) {
+                html += `
+                    <div class="results-section">
+                        <div class="section-header">Files</div>
+                        ${fileResults.slice(0, 3).map(file => `
+                            <a href="preview.html?name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}&project=${encodeURIComponent(file.project)}" class="result-item">
+                                <div class="result-icon">${getFileIcon(file.type)}</div>
+                                <div class="result-details">
+                                    <div class="result-name">${file.name}</div>
+                                    <div class="result-project">${file.project}</div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>`;
+            }
+
+            liveSearchResults.innerHTML = html;
+        }
+
+        function showSearchDropdown() {
+            const dropdown = document.getElementById('searchDropdown');
+            dropdown.classList.add('show');
+            showRecentSearches();
+        }
+
+        function hideSearchDropdown() {
+            setTimeout(() => {
+                document.getElementById('searchDropdown').classList.remove('show');
+            }, 200);
+        }
+    </script>
+</body>
+</html>

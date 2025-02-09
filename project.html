@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Details</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <a href="#" class="back-button" onclick="handleBackNavigation()">← Back</a>
+                <h1 id="projectTitle">Project Details</h1>
+            </div>
+            <div class="header-right">
+                <select id="sortFiles" class="sort-dropdown" onchange="sortFiles()">
+                    <option value="lastEdited">Last edited</option>
+                    <option value="nameAZ">Name A-Z</option>
+                    <option value="nameZA">Name Z-A</option>
+                </select>
+                <div class="search-container">
+                    <form class="search-form" onsubmit="handleSearch(event)">
+                        <div class="search-input-container">
+                            <input type="text" class="search-box" placeholder="Search in this project..." id="searchInput" 
+                                   autocomplete="off"
+                                   oninput="handleLiveSearch(event)" 
+                                   onfocus="showSearchDropdown()" 
+                                   onblur="hideSearchDropdown()">
+                        </div>
+                        <div class="search-dropdown" id="searchDropdown">
+                            <div class="live-search-results" id="liveSearchResults"></div>
+                            <div class="recent-searches" id="recentSearches"></div>
+                            <button type="submit" class="search-dropdown-button" id="searchDropdownButton" style="display: none;">Search</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+        <div class="files-list" id="filesList"></div>
+    </div>
+
+    <script>
+        // Initialize recent searches from localStorage
+        let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+
+        function showRecentSearches() {
+            const recentSearchesDiv = document.getElementById('recentSearches');
+            if (recentSearches.length === 0) return;
+
+            recentSearchesDiv.innerHTML = recentSearches
+                .map(term => `
+                    <div class="recent-search-item" onclick="handleRecentSearch('${term}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        ${term}
+                    </div>
+                `)
+                .join('');
+            recentSearchesDiv.classList.add('show');
+        }
+
+        function hideRecentSearches() {
+            setTimeout(() => {
+                document.getElementById('recentSearches').classList.remove('show');
+            }, 200);
+        }
+
+        function handleRecentSearch(term) {
+            const projectName = new URLSearchParams(window.location.search).get('name');
+            window.location.href = `search.html?q=${encodeURIComponent(term)}&project=${encodeURIComponent(projectName)}`;
+        }
+
+        function handleBackNavigation() {
+            window.location.href = 'index.html';
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+            const searchQuery = document.getElementById('searchInput').value.trim();
+            if (searchQuery) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const projectName = urlParams.get('name');
+                window.location.href = `search.html?q=${encodeURIComponent(searchQuery)}&project=${encodeURIComponent(projectName)}`;
+            }
+        }
+    </script>
+
+    <script>
+        async function loadProjectFiles() {
+            try {
+                const projectName = new URLSearchParams(window.location.search).get('name');
+                if (!projectName) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                document.getElementById('projectTitle').textContent = projectName;
+                document.title = projectName;
+
+                const projectData = {
+                    "Summer campaign best friend for Nestle": [
+                        { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                        { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                        { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                        { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                        { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                        { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                        { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                    ],
+                    "Summer this is a long summer campaign": [
+                        { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                        { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                        { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                        { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                    ],
+                    "Winter campaign cozy home for Starbucks": [
+                        { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                        { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                        { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                        { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                    ],
+                    "Spring campaign new beginnings for Apple": [
+                        { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                        { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                        { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                        { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                    ],
+                    "Fall campaign harvest moon for Whole Foods Market": [
+                        { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                        { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                        { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                        { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                    ]
+                };
+
+                const files = projectData[projectName] || [];
+                files.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
+                displayFiles(files);
+            } catch (error) {
+                console.error('Error loading project files:', error);
+            }
+        }
+
+        function sortFiles() {
+            const sortType = document.getElementById('sortFiles').value;
+            const projectName = new URLSearchParams(window.location.search).get('name');
+            
+            const projectData = {
+                "Summer campaign best friend for Nestle": [
+                    { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                    { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                    { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                    { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                    { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                    { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                    { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                ],
+                "Summer this is a long summer campaign": [
+                    { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                    { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                    { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                    { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                ],
+                "Winter campaign cozy home for Starbucks": [
+                    { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                    { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                    { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                    { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                ],
+                "Spring campaign new beginnings for Apple": [
+                    { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                    { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                    { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                    { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                ],
+                "Fall campaign harvest moon for Whole Foods Market": [
+                    { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                    { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                    { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                    { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                ]
+            };
+
+            const files = projectData[projectName] || [];
+            
+            switch(sortType) {
+                case 'lastEdited':
+                    files.sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited));
+                    break;
+                case 'nameAZ':
+                    files.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'nameZA':
+                    files.sort((a, b) => b.name.localeCompare(a.name));
+                    break;
+            }
+            
+            displayFiles(files);
+        }
+
+        function parseCSV(csv, projectName) {
+            const lines = csv.split('\n');
+            const files = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const [project, fileName, fileType, lastEdited] = lines[i].split('|');
+                if (project === projectName) {
+                    files.push({ name: fileName, type: fileType, lastEdited });
+                }
+            }
+
+            return files;
+        }
+
+        let searchTimeout;
+
+        function handleLiveSearch(event) {
+            const query = event.target.value.trim();
+            const liveSearchResults = document.getElementById('liveSearchResults');
+            const searchDropdownButton = document.getElementById('searchDropdownButton');
+            const recentSearchesDiv = document.getElementById('recentSearches');
+
+            if (!query) {
+                liveSearchResults.style.display = 'none';
+                searchDropdownButton.style.display = 'none';
+                showRecentSearches();
+                return;
+            }
+
+            recentSearchesDiv.style.display = 'none';
+            searchDropdownButton.style.display = 'block';
+            searchDropdownButton.textContent = `Search "${query}"`;
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                try {
+                    const results = performLiveSearch(query);
+                    displayLiveResults(results, query);
+                } catch (error) {
+                    console.error('Error performing live search:', error);
+                }
+            }, 300);
+        }
+
+        function performLiveSearch(query) {
+            const projectName = new URLSearchParams(window.location.search).get('name');
+            const fileResults = [];
+            query = query.toLowerCase();
+
+            const projectsData = [
+                {
+                    name: "Summer campaign best friend for Nestle",
+                    files: [
+                        { name: "01 TV Cover banner", type: "Image", lastEdited: "2024-01-09 09:30:00" },
+                        { name: "02 TV Social banner", type: "Image", lastEdited: "2024-01-09 09:45:00" },
+                        { name: "05 CTV master file v1", type: "Video", lastEdited: "2024-01-10 10:15:00" },
+                        { name: "02 CTV master file v2", type: "Video", lastEdited: "2024-01-10 11:30:00" },
+                        { name: "06 Media play TV", type: "Excel", lastEdited: "2024-01-10 13:20:00" },
+                        { name: "07 Summer Netflix-30s-v1", type: "Video", lastEdited: "2024-01-10 14:45:00" },
+                        { name: "09 Summer Netflix-10s-v1", type: "Video", lastEdited: "2024-01-15 15:00:00" }
+                    ]
+                },
+                {
+                    name: "Summer this is a long summer campaign",
+                    files: [
+                        { name: "Media plan TV", type: "Excel", lastEdited: "2024-01-11 09:00:00" },
+                        { name: "TV Specs", type: "PDF", lastEdited: "2024-01-11 10:30:00" },
+                        { name: "Long long time ago", type: "Image", lastEdited: "2024-01-11 11:15:00" },
+                        { name: "Must be true", type: "Image", lastEdited: "2024-01-11 11:45:00" }
+                    ]
+                },
+                {
+                    name: "Winter campaign cozy home for Starbucks",
+                    files: [
+                        { name: "Mood board", type: "Image", lastEdited: "2024-01-12 09:00:00" },
+                        { name: "Storyboard TV", type: "PDF", lastEdited: "2024-01-12 10:30:00" },
+                        { name: "Radio spot", type: "Audio", lastEdited: "2024-01-12 11:45:00" },
+                        { name: "Print ad", type: "Image", lastEdited: "2024-01-12 13:15:00" }
+                    ]
+                },
+                {
+                    name: "Spring campaign new beginnings for Apple",
+                    files: [
+                        { name: "Keynote presentation", type: "PDF", lastEdited: "2024-01-13 09:30:00" },
+                        { name: "Product demo video", type: "Video", lastEdited: "2024-01-13 11:00:00" },
+                        { name: "Social media assets", type: "Image", lastEdited: "2024-01-13 14:20:00" },
+                        { name: "Influencer brief", type: "PDF", lastEdited: "2024-01-13 15:45:00" }
+                    ]
+                },
+                {
+                    name: "Fall campaign harvest moon for Whole Foods Market",
+                    files: [
+                        { name: "Recipe booklet TV", type: "PDF", lastEdited: "2024-01-14 10:00:00" },
+                        { name: "In-store display", type: "Image", lastEdited: "2024-01-14 11:30:00" },
+                        { name: "Email newsletter", type: "Video", lastEdited: "2024-01-14 13:45:00" },
+                        { name: "Partnership proposal with local farm", type: "PDF", lastEdited: "2024-01-14 15:00:00" }
+                    ]
+                }
+            ];
+
+            const project = projectsData.find(p => p.name === projectName);
+            if (project) {
+                project.files.forEach(file => {
+                    if (file.name.toLowerCase().includes(query)) {
+                        fileResults.push({
+                            name: file.name,
+                            type: file.type,
+                            project: project.name
+                        });
+                    }
+                });
+            }
+
+            return fileResults.slice(0, 5);
+        }
+
+        function displayFiles(files) {
+            const filesList = document.getElementById('filesList');
+            if (!files || files.length === 0) {
+                filesList.innerHTML = '<div class="no-files">No files found in this project</div>';
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => `
+                <div class="file-item">
+                    <div class="file-icon">${getFileIcon(file.type)}</div>
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            <span class="file-type">${file.type}</span>
+                            <span class="file-date">${formatDate(file.lastEdited)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getFileIcon(type) {
+            const icons = {
+                'PDF': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>',
+                'Image': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>',
+                'Video': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>',
+                'Audio': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>',
+                'Excel': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><line x1="10" y1="9" x2="16" y2="9"></line></svg>'
+            };
+            return icons[type] || icons['PDF'];
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function displayLiveResults(results, query) {
+            const liveSearchResults = document.getElementById('liveSearchResults');
+            const hasResults = results.length > 0;
+            liveSearchResults.style.display = 'block';
+
+            if (!hasResults) {
+                liveSearchResults.innerHTML = `
+                    <div class="no-results">
+                        No matches found for "${query}"
+                    </div>`;
+                return;
+            }
+
+            const html = `
+                <div class="results-section">
+                    <div class="section-header">Files</div>
+                    ${results.map(file => `
+                        <a href="preview.html?name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}&project=${encodeURIComponent(file.project)}" class="result-item">
+                            <div class="result-icon">${getFileIcon(file.type)}</div>
+                            <div class="result-details">
+                                <div class="result-name">${file.name}</div>
+                            </div>
+                        </a>
+                    `).join('')}
+                </div>`;
+
+            liveSearchResults.innerHTML = html;
+        }
+
+        function getFileIcon(fileType) {
+            const icons = {
+                'js': '📄',
+                'css': '📄',
+                'html': '📄',
+                'json': '📄',
+                'default': '📄'
+            };
+            return icons[fileType.toLowerCase()] || icons.default;
+        }
+
+        function showSearchDropdown() {
+            const dropdown = document.getElementById('searchDropdown');
+            dropdown.classList.add('show');
+            showRecentSearches();
+        }
+
+        function hideSearchDropdown() {
+            setTimeout(() => {
+                const dropdown = document.getElementById('searchDropdown');
+                dropdown.classList.remove('show');
+            }, 200);
+        }
+
+        function getFileIcon(fileType) {
+            const icons = {
+                'Image': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+                'Video': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>`,
+                'Audio': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+                'PDF': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+                'Excel': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`
+            };
+            const defaultIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+            return icons[fileType.trim()] || defaultIcon;
+        }
+
+        function displayFiles(files) {
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = files.map(file => {
+                const lastEditedDate = new Date(file.lastEdited);
+                const formattedDate = lastEditedDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                return `
+                    <div class="file-item" onclick="window.location.href='preview.html?name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}&project=${encodeURIComponent(new URLSearchParams(window.location.search).get('name'))}'">
+                        <div class="file-icon">${getFileIcon(file.type)}</div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-type">${file.type} • ${formattedDate}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loadProjectFiles();
+    </script>
+</body>
+</html>
