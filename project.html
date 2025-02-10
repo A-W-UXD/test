@@ -47,7 +47,12 @@
 
         function showRecentSearches() {
             const recentSearchesDiv = document.getElementById('recentSearches');
-            if (recentSearches.length === 0) return;
+            if (recentSearches.length === 0) {
+                recentSearchesDiv.innerHTML = '<div class="no-results">No recent searches</div>';
+                recentSearchesDiv.style.display = 'block';
+                document.getElementById('searchDropdownButton').style.display = 'none';
+                return;
+            }
 
             recentSearchesDiv.innerHTML = recentSearches
                 .map(term => `
@@ -82,6 +87,14 @@
             event.preventDefault();
             const searchQuery = document.getElementById('searchInput').value.trim();
             if (searchQuery) {
+                // Add to recent searches
+                if (!recentSearches.includes(searchQuery)) {
+                    recentSearches.unshift(searchQuery);
+                    if (recentSearches.length > 5) {
+                        recentSearches.pop();
+                    }
+                    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                }
                 const urlParams = new URLSearchParams(window.location.search);
                 const projectName = urlParams.get('name');
                 window.location.href = `search.html?q=${encodeURIComponent(searchQuery)}&project=${encodeURIComponent(projectName)}`;
@@ -235,6 +248,17 @@
             recentSearchesDiv.style.display = 'none';
             searchDropdownButton.style.display = 'block';
             searchDropdownButton.textContent = `Search "${query}"`;
+            searchDropdownButton.onclick = () => {
+                if (!recentSearches.includes(query)) {
+                    recentSearches.unshift(query);
+                    if (recentSearches.length > 5) {
+                        recentSearches.pop();
+                    }
+                    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                }
+                const projectName = new URLSearchParams(window.location.search).get('name');
+                window.location.href = `search.html?q=${encodeURIComponent(query)}&project=${encodeURIComponent(projectName)}`;
+            };
 
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {

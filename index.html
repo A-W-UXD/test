@@ -272,7 +272,12 @@
 
         function showRecentSearches() {
             const recentSearchesDiv = document.getElementById('recentSearches');
-            if (recentSearches.length === 0) return;
+            if (recentSearches.length === 0) {
+                recentSearchesDiv.innerHTML = '<div class="no-results">No recent searches</div>';
+                recentSearchesDiv.style.display = 'block';
+                document.getElementById('searchDropdownButton').style.display = 'none';
+                return;
+            }
 
             recentSearchesDiv.innerHTML = recentSearches
                 .slice(0, 5)
